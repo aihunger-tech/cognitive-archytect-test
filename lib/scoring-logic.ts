@@ -11,15 +11,16 @@ export function calculateResult(userAnswers: number[], correctAnswers: number[])
         }
     });
 
-    // Find which archetype the score falls into
     const archetype = ARCHETYPES.find(a => score >= a.minScore && score <= a.maxScore);
-
-    return archetype || ARCHETYPES[ARCHETYPES.length - 1]; // Default to Seeker
+    return archetype || ARCHETYPES[ARCHETYPES.length - 1];
 }
 
-export function getPercentile(score: number): string {
-    // In a real app, this would fetch the average from Supabase.
-    // For now, we simulate a viral "high percentile" to trigger the ego-hook.
-    const percentiles = ["45%", "62%", "78%", "85%", "92%", "98%"];
-    return percentiles[Math.min(score, percentiles.length - 1)];
+export function calculatePercentile(userScore: number, totalUsers: number, usersWithLowerScore: number): string {
+    if (totalUsers === 0) return "1%";
+    
+    // Percentile formula: (Number of people below you / Total people) * 100
+    const percentile = (usersWithLowerScore / totalUsers) * 100;
+    
+    // We round and cap it at 99% (because you can't be the 100th percentile unless you're the only one)
+    return `${Math.min(Math.round(percentile), 99)}%`;
 }

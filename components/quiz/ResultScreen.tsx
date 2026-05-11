@@ -1,11 +1,46 @@
 // components/quiz/ResultScreen.tsx
 "use client";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Archetype } from "@/types";
-import { Share2, Zap, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { Share2, ArrowRight, Trophy, Globe } from "lucide-react";
+import { useQuizStore } from "@/store/useQuizStore";
+import { supabase } from "@/lib/supabase";
+import { calculatePercentile } from "@/lib/scoring-logic";
+import { QUESTIONS } from "@/constants/questions";
 
-export default function ResultScreen({ archetype, percentile }: { archetype: Archetype, percentile: string }) {
+export default function ResultScreen({ archetype }: { archetype: Archetype }) {
+    const { goToBridge, userAnswers } = useQuizStore();
+    const [percentile, setPercentile] = useState("...");
+    const [totalUsers, setTotalUsers] = useState(0);
+
+    useEffect(() => {
+        async function fetchRank() {
+            // 1. Calculate current user's score
+            const userScore = userAnswers.filter((ans, i) => ans === QUESTIONS[i].correctAnswer).length;
+
+            // 2. Get total count of users in database
+            const { count: totalCount } = await supabase
+                .from('scores')
+                .select('*', { count: 'exact', head: true });
+
+            // 3. Get count of users who scored LOWER than the current user
+            const { count: lowerCount } = await supabase
+                .from('scores')
+                .select('*', { count: 'exact', head: true })
+                .lt('score', userScore);
+
+            if (totalCount) {
+                setTotalUsers(totalCount);
+                setPercentile(calculatePercentile(userScore, totalCount, lowerCount || 0));
+            } else {
+                setPercentile("1%"); // First user
+            }
+        }
+
+        fetchRank();
+    }, [userAnswers]);
+
     return (
         <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -40,9 +75,14 @@ export default function ResultScreen({ archetype, percentile }: { archetype: Arc
                 </div>
             </div>
 
-            <div className="flex justify-center items-baseline gap-2">
-                <span className="text-6xl font-black text-white">{percentile}</span>
-                <span className="text-gray-500 font-medium">Top Percentile</span>
+            <div className="flex flex-col items-center justify-center gap-1">
+                <div className="flex items-baseline gap-2">
+                    <span className="text-6xl font-black text-white glow-text">{percentile}</span>
+                    <span className="text-gray-500 font-medium">Top Percentile</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500 font-mono uppercase tracking-tighter">
+                    <Globe size={12} /> Based on {totalUsers.toLocaleString()} global participants
+                </div>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -50,9 +90,12 @@ export default function ResultScreen({ archetype, percentile }: { archetype: Arc
                     <Share2 size={20} /> Share Result
                 </button>
                 
-                <Link href="https://wealth-check.vercel.app" className="w-full py-4 rounded-2xl bg-brand-purple text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-                    Check Financial Wealth <ArrowRight size={20} />
-                </Link>
+                <button 
+                    onClick={goToBridge}
+                    className="w-full py-4 rounded-2xl bg-brand-purple text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                >
+                    Connect to Wealth Check <ArrowRight size={20} />
+                </button>
             </div>
         </motion.div>
     );

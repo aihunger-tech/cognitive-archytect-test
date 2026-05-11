@@ -7,6 +7,14 @@ import { CheckCircle2 } from "lucide-react";
 
 export default function QuestionCard({ question }: { question: Question }) {
     const { setAnswer, userAnswers } = useQuizStore();
+
+    // GUARD CLAUSE: If question is undefined (happens at the end of the quiz), 
+    // return null so the app doesn't crash.
+    if (!question) {
+        return null;
+    }
+
+    // Safely access the current answer using the question's ID
     const currentAnswer = userAnswers[question.id - 1];
 
     return (

@@ -1,22 +1,28 @@
 // store/useQuizStore.ts
 import { create } from 'zustand';
-import { Question } from '@/types';
 
 interface QuizState {
     currentStep: number;
     userAnswers: number[];
-    status: 'IDLE' | 'TESTING' | 'CALCULATING' | 'COMPLETED';
+    username: string;
+    email: string;
+    status: 'IDLE' | 'TESTING' | 'CALCULATING' | 'UNLOCKING' | 'COMPLETED' | 'BRIDGE';
     startTime: number | null;
     
     startQuiz: () => void;
     setAnswer: (answerIndex: number) => void;
     nextStep: () => void;
+    setUser: (username: string, email: string) => void;
+    unlockResult: () => void;
+    goToBridge: () => void;
     resetQuiz: () => void;
 }
 
 export const useQuizStore = create<QuizState>((set) => ({
     currentStep: 0,
     userAnswers: [],
+    username: '',
+    email: '',
     status: 'IDLE',
     startTime: null,
 
@@ -37,9 +43,17 @@ export const useQuizStore = create<QuizState>((set) => ({
         currentStep: state.currentStep + 1 
     })),
 
+    setUser: (username, email) => set({ username, email }),
+
+    unlockResult: () => set({ status: 'COMPLETED' }),
+
+    goToBridge: () => set({ status: 'BRIDGE' }),
+
     resetQuiz: () => set({ 
         currentStep: 0, 
         userAnswers: [], 
+        username: '',
+        email: '',
         status: 'IDLE', 
         startTime: null 
     }),
