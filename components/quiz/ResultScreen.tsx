@@ -3,43 +3,66 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Archetype } from "@/types";
-import { Share2, ArrowRight, Trophy, Globe } from "lucide-react";
+import { Share2, ArrowRight, Globe, Sparkles } from "lucide-react";
 import { useQuizStore } from "@/store/useQuizStore";
 import { supabase } from "@/lib/supabase";
 import { calculatePercentile } from "@/lib/scoring-logic";
 import { QUESTIONS } from "@/constants/questions";
 
 export default function ResultScreen({ archetype }: { archetype: Archetype }) {
-    const { goToBridge, userAnswers } = useQuizStore();
-    const [percentile, setPercentile] = useState("...");
+    const { goToBridge, userAnswers, username } = useQuizStore();
+    const [percentile, setPercentile] = useState("Calculating...");
     const [totalUsers, setTotalUsers] = useState(0);
+    const [aiAnalysis, setAiAnalysis] = useState("");
+    const [isAiLoading, setIsAiLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchRank() {
-            // 1. Calculate current user's score
-            const userScore = userAnswers.filter((ans, i) => ans === QUESTIONS[i].correctAnswer).length;
+        async function fetchAllData() {
+            // 1. Calculate Weighted Score
+            let userWeightedScore = 0;
+            userAnswers.forEach((ans, i) => {
+                if (ans === QUESTIONS[i]?.correctAnswer) {
+                    userWeightedScore += QUESTIONS[i]?.difficulty || 1;
+                }
+            });
 
-            // 2. Get total count of users in database
-            const { count: totalCount } = await supabase
-                .from('scores')
-                .select('*', { count: 'exact', head: true });
+            // 2. Fetch Rank and Percentile
+            try {
+                const { count: totalCount } = await supabase.from('scores').select('*', { count: 'exact', head: true });
+                const { count: lowerCount } = await supabase.from('scores').select('*', { count: 'exact', head: true }).lt('score', userWeightedScore);
 
-            // 3. Get count of users who scored LOWER than the current user
-            const { count: lowerCount } = await supabase
-                .from('scores')
-                .select('*', { count: 'exact', head: true })
-                .lt('score', userScore);
+                if (totalCount) {
+                    setTotalUsers(totalCount);
+                    setPercentile(calculatePercentile(userWeightedScore, totalCount, lowerCount || 0));
+                } else {
+                    setPercentile("Top 1%");
+                }
+            } catch (err) {
+                setPercentile("Top 10%");
+            }
 
-            if (totalCount) {
-                setTotalUsers(totalCount);
-                setPercentile(calculatePercentile(userScore, totalCount, lowerCount || 0));
-            } else {
-                setPercentile("1%"); // First user
+            // 3. Fetch AI Personalized Analysis
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        archetype: archetype.name, 
+                        score: userWeightedScore, 
+                        username: username || "User" 
+                    }),
+                });
+                const data = await response.json();
+                setAiAnalysis(data.analysis);
+            } catch (err) {
+                setAiAnalysis("Your cognitive patterns suggest a rare ability to synthesize complex information rapidly.");
+            } finally {
+                setIsAiLoading(false);
             }
         }
 
-        fetchRank();
-    }, [userAnswers]);
+        fetchAllData();
+    }, [userAnswers, archetype.name, username]);
 
     return (
         <motion.div 
@@ -62,9 +85,28 @@ export default function ResultScreen({ archetype }: { archetype: Archetype }) {
                 <p className="text-gray-400 text-lg italic">{archetype.title}</p>
             </div>
 
+            {/* AI Analysis Section - The "Magic" part */}
+            <div className="p-6 rounded-3xl border border-brand-purple/30 bg-brand-purple/10 backdrop-blur-xl space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-2">
+                    <Sparkles className="text-brand-purple animate-pulse" size={16} />
+                </div>
+                <p className="text-sm text-brand-purple font-mono uppercase tracking-widest mb-2">AI Cognitive Analysis</p>
+                {isAiLoading ? (
+                    <div className="space-y-2">
+                        <div className="h-4 bg-white/10 rounded-full w-full animate-pulse" />
+                        <div className="h-4 bg-white/10 rounded-full w-5/6 animate-pulse" />
+                        <div className="h-4 bg-white/10 rounded-full w-4/6 animate-pulse" />
+                    </div>
+                ) : (
+                    <p className="text-gray-200 leading-relaxed text-lg italic font-medium">
+                        "{aiAnalysis}"
+                    </p>
+                )}
+            </div>
+
             <div className="p-6 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl space-y-4">
-                <p className="text-gray-300 leading-relaxed">
-                    "{archetype.description}"
+                <p className="text-gray-400 leading-relaxed">
+                    {archetype.description}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 pt-4">
                     {archetype.superpowers.map((power) => (
