@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-black: #050505;
+  --brand-dark: #0A0A0A;
+  --brand-purple: #8B5CF6;
+}
+
+body {
+  background-color: var(--brand-black);
+  color: white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* --- Web 4.0 Glassmorphism System --- */
+@layer components {
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-2xl;
+  }
+
+  .glass-button {
+    @apply backdrop-blur-md bg-white/10 border border-white/20 transition-all duration-300 active:scale-95 hover:bg-white/20;
+  }
+
+  .neo-brutalist-shadow {
+    box-shadow: 4px 4px 0px 0px rgba(139, 92, 246, 0.5);
+  }
+}
+
+/* --- Custom Animations for Viral Appeal --- */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* --- Custom Scrollbar (Hidden for Mobile-App Feel) --- */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- Typography Enhancements --- */
+h1, h2, h3 {
+  letter-spacing: -0.05em;
+}
+
+/* --- Glow Effect for the Result Cards --- */
+.glow-text {
+  text-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+}
