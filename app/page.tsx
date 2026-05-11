@@ -12,11 +12,10 @@ import UnlockScreen from "@/components/quiz/UnlockScreen";
 import { BrainCircuit } from "lucide-react";
 
 export default function QuizPage() {
-    const { status, currentStep, userAnswers, startQuiz, nextStep, goToBridge } = useQuizStore();
+    const { status, currentStep, userAnswers, startQuiz, nextStep } = useQuizStore();
     const [isCalculating, setIsCalculating] = useState(false);
     const [finalStatus, setFinalStatus] = useState(useQuizStore.getState().status);
 
-    // Sync local status with Zustand store
     useEffect(() => {
         setFinalStatus(status);
     }, [status]);
@@ -29,36 +28,29 @@ export default function QuizPage() {
 
     const handleComplete = async () => {
         setIsCalculating(true);
-        // Psychological tension: Simulate AI analysis of the patterns
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 2500));
         setIsCalculating(false);
-        
-        // Transition to the Unlock/Data gathering screen
         (useQuizStore as any).setState({ status: 'UNLOCKING' });
     };
 
     const isFinished = finalStatus === 'COMPLETED';
-    
-    // Correctly calculate the Archetype based on the user's specific answers
     const finalResult = calculateResult(userAnswers, QUESTIONS.map(q => q.correctAnswer));
 
     return (
         <main className="min-h-screen bg-brand-black flex items-center justify-center p-4 font-sans overflow-hidden">
-            {/* Background Ambience - Web 4.0 Glows */}
             <div className="fixed top-0 -left-20 w-96 h-96 bg-brand-purple/20 rounded-full blur-3xl animate-pulse-slow" />
             <div className="fixed bottom-0 -right-20 w-96 h-96 bg-brand-blue/20 rounded-full blur-3xl animate-pulse-slow" />
 
-            {/* Main Mobile Container */}
-            <div className="relative w-full max-w-md h-[850px] bg-brand-dark border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col">
+            {/* FIXED CONTAINER: Added overflow-y-auto and max-h */}
+            <div className="relative w-full max-w-md max-h-[850px] bg-brand-dark border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col">
                 
-                {/* Header / Progress Bar */}
                 {finalStatus === 'TESTING' && (
-                    <div className="p-8 pb-4 flex items-center justify-between">
+                    <div className="p-6 pb-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <BrainCircuit className="text-brand-purple" size={24} />
-                            <span className="text-xs font-mono text-gray-500 uppercase tracking-widest">System Analysis</span>
+                            <BrainCircuit className="text-brand-purple" size={20} />
+                            <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Analysis</span>
                         </div>
-                        <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <motion.div 
                                 className="h-full bg-brand-purple"
                                 initial={{ width: 0 }}
@@ -68,85 +60,70 @@ export default function QuizPage() {
                     </div>
                 )}
 
-                <div className="flex-1 px-8 flex flex-col justify-center">
+                {/* Scrollable Content Area */}
+                <div className="flex-1 px-6 py-4 overflow-y-auto scrollbar-hide flex flex-col justify-center">
                     <AnimatePresence mode="wait">
-                        {/* START SCREEN */}
                         {finalStatus === 'IDLE' && (
                             <motion.div 
                                 key="start"
-                                initial={{ opacity: 0, y: 20 }} 
-                                animate={{ opacity: 1, y: 0 }} 
-                                exit={{ opacity: 0, y: -20 }}
+                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
                                 className="text-center space-y-6"
                             >
-                                <div className="mx-auto w-20 h-20 bg-brand-purple/20 rounded-3xl flex items-center justify-center mb-6 border border-brand-purple/30 animate-float">
-                                    <BrainCircuit className="text-brand-purple" size={40} />
+                                <div className="mx-auto w-16 h-16 bg-brand-purple/20 rounded-2xl flex items-center justify-center mb-4 border border-brand-purple/30 animate-float">
+                                    <BrainCircuit className="text-brand-purple" size={32} />
                                 </div>
-                                <h1 className="text-6xl font-black text-white tracking-tighter leading-none">
+                                <h1 className="text-4xl font-black text-white tracking-tighter leading-tight">
                                     What's your <span className="text-brand-purple">Archetype?</span>
                                 </h1>
-                                <p className="text-gray-400 text-lg px-4">
+                                <p className="text-gray-400 text-sm px-4">
                                     A high-performance cognitive scan to reveal your mental blueprint.
                                 </p>
                                 <button 
                                     onClick={startQuiz}
-                                    className="w-full py-4 bg-white text-black rounded-2xl font-bold text-lg hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
+                                    className="w-full py-3 bg-white text-black rounded-xl font-bold text-md hover:scale-[1.02] active:scale-95 transition-all"
                                 >
                                     Begin Analysis
                                 </button>
                             </motion.div>
                         )}
 
-                        {/* QUIZ INTERFACE */}
                         {finalStatus === 'TESTING' && !isCalculating && (
-                            <motion.div key="quiz" className="space-y-8">
+                            <motion.div key="quiz" className="space-y-6">
                                 <QuestionCard question={QUESTIONS[currentStep]} />
                                 <button 
                                     disabled={userAnswers[currentStep] === undefined}
                                     onClick={nextStep}
-                                    className="w-full py-4 rounded-2xl bg-brand-purple text-white font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-purple/20"
+                                    className="w-full py-3 rounded-xl bg-brand-purple text-white font-bold disabled:opacity-30 transition-all"
                                 >
                                     Continue →
                                 </button>
                             </motion.div>
                         )}
 
-                        {/* CALCULATING STATE */}
                         {isCalculating && (
-                            <motion.div 
-                                key="calc" 
-                                initial={{ opacity: 0 }} 
-                                animate={{ opacity: 1 }} 
-                                className="text-center space-y-6"
-                            >
-                                <div className="relative w-20 h-20 mx-auto">
+                            <motion.div key="calc" className="text-center space-y-4">
+                                <div className="relative w-16 h-16 mx-auto">
                                     <div className="absolute inset-0 border-4 border-brand-purple/20 rounded-full" />
                                     <div className="absolute inset-0 border-4 border-brand-purple border-t-transparent rounded-full animate-spin" />
                                 </div>
-                                <div className="space-y-2">
-                                    <p className="text-white font-mono text-sm animate-pulse uppercase tracking-widest">
-                                        Synthesizing Data...
-                                    </p>
-                                    <p className="text-gray-500 text-xs font-mono">Matching Cognitive Patterns</p>
-                                </div>
+                                <p className="text-white font-mono text-xs animate-pulse uppercase tracking-widest">
+                                    Synthesizing Data...
+                                </p>
                             </motion.div>
                         )}
 
-                        {/* DATA COLLECTION / UNLOCK SCREEN */}
                         {finalStatus === 'UNLOCKING' && (
                             <motion.div key="unlock">
                                 <UnlockScreen />
                             </motion.div>
                         )}
 
-                        {/* RESULT SCREEN - NOW WITH CORRECT PROPS */}
                         {isFinished && (
                             <motion.div key="result">
                                 <ResultScreen archetype={finalResult} />
                             </motion.div>
                         )}
 
-                        {/* CONVERSION BRIDGE */}
                         {finalStatus === 'BRIDGE' && (
                             <motion.div key="bridge">
                                 <BridgeScreen archetypeName={finalResult.name} />
